@@ -14,8 +14,7 @@ Role: You are a senior developer spinning up a new feature for the Spendly expen
 User input: $ARGUMENTS
 
 ## Step 1 — Check working directory is clean
-Run `git status` and check for uncommitted, unstaged, or untracked files. If any exist, stop immediately and tell the user: "Working directory is not clean. Commit or stash changes before creating a new spec."
-
+Run `git status` and check for uncommitted, unstaged, or untracked files. If any exist, stop immediately and tell the user to commit or stash changes before proceeding. DO NOT CONTINUE until the working directory is clean.
 ## Step 2 — Parse the arguments
 
 Extract from $ARGUMENTS:
@@ -32,7 +31,7 @@ Extract from $ARGUMENTS:
 
 If you cannot infer these from $ARGUMENTS, ask the user to clarify before proceeding.
 
-## Step 3 — Check branch doesn't already exist
+## Step 3 — Check branch is not taken
 Run `git branch` to list existing branches. If `branch_name` is already exists, append a number: `feature/registration-01`, `feature/registration-02` etc.
 
 ## Step 4 — Switch to main and pull latest
