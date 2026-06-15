@@ -1,94 +1,121 @@
 ---
-description: Create a feature branch and spec document for the next Spendly step
-argument-hint: "<step_number> <feature_name>"
-allowed-tools: Read, Bash, Write, Glob
+description: Create a spec file and feature branch for the next Spendly step
+argument-hint: Step number and feature name e.g. 2 registration
+allowed-tools: Read, Write, Glob, Bash(git:*)
 ---
 
 A step number and feature name are required.
 Usage: `/create-spec <step_number> <feature_name>`
 Example: `/create-spec 2 registration`
-
 If $ARGUMENTS is empty or incomplete, stop and ask for the step number and feature name.
 
-## Step 1 — Verify clean working directory
+Role: You are a senior developer spinning up a new feature for the Spendly expense tracker. Always follow the rules in CLAUDE.md.
 
-```bash
-git status --short
-```
+User input: $ARGUMENTS
 
-If there are uncommitted changes, stop and say:
-"Working directory is not clean. Commit or stash changes before creating a new spec."
+## Step 1 — Check working directory is clean
+Run `git status` and check for uncommitted, unstaged, or untracked files. If any exist, stop immediately and tell the user: "Working directory is not clean. Commit or stash changes before creating a new spec."
 
-## Step 2 — Parse arguments
+## Step 2 — Parse the arguments
 
 Extract from $ARGUMENTS:
-- step_number — the step number (e.g. "2")
-- feature_name — the feature title in plain English (e.g. "registration")
+1. `step_number` — zero-padded to 2 digits: 2 → 02, 11 → 11
+2. `feature_title` — human readable title in Title Case
+  - Example: "Registration" or "Login and Logout"
+3. `feature_slug` — git and file safe slug
+   - Lowercase, kebab-case
+   - Only a-z, 0-9 and -
+   - Maximum 40 characters
+   - Example: registration, login-logout
+4. `branch_name` — format: `feature/<feature_slug>`
+   - Example: `feature/registration`
 
-Derive branch name: `step-<step_number>-<feature_name_kebab_case>`
-Example: `step-2-registration`
+If you cannot infer these from $ARGUMENTS, ask the user to clarify before proceeding.
 
 ## Step 3 — Check branch doesn't already exist
+Run `git branch` to list existing branches. If `branch_name` is already exists, append a number: `feature/registration-01`, `feature/registration-02` etc.
 
-```bash
-git branch --list step-<N>-<name>
-```
+## Step 4 — Switch to main and pull latest
 
-If it exists, stop and say:
-"Branch already exists: <branch-name>. Delete it first or choose a different name."
-
-## Step 4 — Pull latest main and create branch
+Run:
 
 ```bash
 git checkout main
 git pull origin main
-git checkout -b <branch-name>
 ```
 
-## Step 5 — Research the codebase
+## Step 5 — Create and switch to the feature branch
+Create and switch to the feature branch
 
+Run:
+
+```bash
+git checkout -b <branch_name>
+```
+
+## Step 6 — Research the codebase 
 Read these files to understand current state:
-- `CLAUDE.md`
-- `app.py`
-- `database/db.py`
-- Any existing specs in `.claude/specs/`
+- `CLAUDE.md`— roadmap, conventions, schema
+- `app.py` — existing routes and structure
+- `database/db.py` — existing schema and functions
+- All files in `.claude/specs/` — avoid duplicating existing specs
 
-## Step 6 — Generate spec document
+Check `CLAUDE.md` to confirm the requested step is not already marked complete. If it is, warn the user and stop.
 
-Write a spec to `.claude/specs/<step_number>-<feature_name_kebab>.md` following this structure:
+
+## Step 7 — Write the spec document
+
+Write a spec to `.claude/specs/<step_number>-<feature_name>.md` following this structure:
+
 
 ```markdown
-# Spec: <Feature Name>
+# Spec: <feature_title>
 
 ## Overview
-[What this step accomplishes and why it matters]
+[One paragraph describing what this step accomplishes and why it matters]
 
 ## Depends on
 [Prior steps this feature builds on]
 
 ## Routes
-[List of GET/POST routes with auth requirement]
+Every new route needed:
+
+- METHOD /path — description — access level (public/logged-in)
+
+If no new routes: state "No new routes".
 
 ## Database changes
-[New tables, columns, or helper functions needed]
+[Any new tables, columns, or constraints needed. Always verify against `database/db.py` before writing this. If none: state "No database changes".]
 
 ## Templates
 [Templates to create or modify]
 
+- Create: list new templates with their path
+- Modify: list existing templates and what changes
+
 ## Files to change
 [Existing files that need modification]
+
 
 ## Files to create
 [New files to add]
 
 ## New dependencies
-[Any new pip packages — flag if any]
+[Any new pip packages — If none: state "No new dependencies"]
 
 ## Rules for implementation
-[Constraints specific to this feature]
+[Specific constraints Claude must follow] 
+
+Always include:
+
+- No SQLAlchemy or ORMs
+- Parameterised queries only
+- Passwords hashed with werkzeug
+- Use CSS variables — never hardcode hex values
+- All templates extend `base.html`
 
 ## Definition of done
-- [ ] [Verifiable checklist items]
+- [ ] [A specific testable checklist. Each item must be something that can be verified by running the app.]
 ```
 
 Follow all constraints from `CLAUDE.md`:
@@ -98,17 +125,19 @@ Follow all constraints from `CLAUDE.md`:
 - All templates extend `base.html`
 - `url_for()` for every internal link
 
-## Step 7 — Report summary
+## Step 8 — Save the spec
 
-Print:
-```
-✓ Branch created — <branch-name>
-✓ Spec written — .claude/specs/<filename>
+Save to: .claude/specs/<step_number>-<feature_slug>.md
 
-Next steps:
-1. Review the spec
-2. Implement the feature
-3. Run /test-feature <spec-name> to validate
-4. Run /code-review-feature <spec-name> before shipping
-5. Run /ship-feature when ready
-```
+## Step 9 — Report to the user
+
+Print a short summary in this exact format:
+
+Branch:    <branch_name>
+Spec file: .claude/specs/<step_number>-<feature_slug>.md
+Title:     <feature_title>
+
+Then tell the user: "Review the spec at `.claude/specs/<step_number>-<feature_slug>.md` then enter Plan Mode with Shift+Tab twice to begin implementation."
+
+
+Do not print the full spec in chat unless explicitly asked.
