@@ -4,9 +4,7 @@ argument-hint: "<user_id> <count> <months>"
 allowed-tools: Read, Bash(python3:*)
 ---
 
-Read database/db.py to understand the expenses table 
-schema, the db connection pattern, and the database 
-file name.
+Read `database/db.py` to understand the expenses table schema, the db connection pattern, and the database file name.
 
 User input: $ARGUMENTS
 
@@ -23,8 +21,7 @@ Example: /seed-expenses 1 50 6"
 
 ## Step 2 — Verify user exists
 
-Before generating anything, confirm the user_id exists 
-in the users table. If not, stop and say:
+Before generating anything, confirm the user_id exists in the users table. If not, stop and say:
 "No user found with id <user_id>."
 
 ## Step 3 — Generate and insert expenses
@@ -32,22 +29,18 @@ in the users table. If not, stop and say:
 Write and run a Python script that:
 
 1. Spreads expenses randomly across the past <months> months
-2. Uses these categories with realistic Indian descriptions 
-   and amounts (₹):
-   - Food: 50–800
-   - Transport: 20–500
-   - Bills: 200–3000
-   - Health: 100–2000
-   - Entertainment: 100–1500
-   - Shopping: 200–5000
-   - Other: 50–1000
-3. Distributes categories roughly proportionally 
-   (Food most common, Health and Entertainment least)
-4. Uses the db connection pattern from db.py — do not 
-   hardcode the database filename
+2. Uses these categories with realistic Pakistani descriptions and amounts (Rs):
+   - Food: 150–2400
+   - Transport: 60–1500
+   - Bills: 600–9000
+   - Health: 300–6000
+   - Entertainment: 300–4500
+   - Shopping: 600–15000
+   - Other: 150–3000
+3. Distributes categories roughly proportionally (Food most common, Health and Entertainment least)
+4. Uses the db connection pattern from `db.py` — do not hardcode the database filename
 5. Uses parameterised queries only — no string formatting in SQL
-6. Inserts all expenses in a single transaction — 
-   roll back everything if any insert fails
+6. Inserts all expenses in a single transaction — roll back everything if any insert fails
 
 ## Step 4 — Confirm
 
