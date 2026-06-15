@@ -114,7 +114,7 @@ Always include:
 - Use CSS variables — never hardcode hex values
 - All templates extend `base.html`
 
-## Definition of done
+## Definition of done / Acceptance Criteria
 - [ ] [A specific testable checklist. Each item must be something that can be verified by running the app.]
 ```
 
