@@ -8,20 +8,26 @@ This feature implements user authentication for Spendly. It converts the `/login
 - Step 02 — Registration (`create_user` and password hashing must be in place; a user must exist to log in against)
 
 ## Routes
-- `GET /login` — render login form — public
+- `GET /login` — render login form (redirect to `/` if already logged in) — public
 - `POST /login` — validate credentials, set session, redirect — public
 - `GET /logout` — clear session, redirect to `/` — public (no login required to log out)
+- `GET, POST /register` — existing route; now redirects to `/` if already logged in — public
+
+No new routes are added; the `/register` route (Step 02) gains an already-authenticated guard.
 
 ## Database changes
 No database changes. The `users` table created in Step 01 already stores `email` and `password_hash`.
 
 ## Templates
-- **Modify:** `templates/login.html` — add a POST form with `email` and `password` fields, flash message display, and a link to `/register`
+- **Modify:** `templates/login.html` — POST form with `email` and `password` fields, flash/error display, and a link to `/register`. (Already satisfied in the existing file; no edit was required.)
+- **Modify:** `templates/base.html` — make the nav session-aware: show a **Log out** link when `session.user_id` is set, otherwise show **Sign in** / **Get started**.
 
 ## Files to change
-- `app.py` — implement `login()` as GET+POST handler and implement `logout()`
+- `app.py` — implement `login()` as GET+POST handler and implement `logout()`; add an already-authenticated guard to `login()` and `register()` (`if session.get("user_id"): redirect to landing`)
 - `database/db.py` — add `get_user_by_email(email)` helper that returns a user row or `None`
-- `templates/login.html` — add POST form and flash display
+- `templates/base.html` — session-aware nav (Log out vs Sign in / Get started)
+- `templates/login.html` — POST form and error display (already present; no change needed)
+- `CLAUDE.md` — update the "Implemented vs stub routes" table for `/login` and `/logout`
 
 ## Files to create
 No new files.
@@ -51,3 +57,7 @@ No new dependencies. `werkzeug.security.check_password_hash` is already availabl
 - [ ] Visiting `GET /logout` clears the session and redirects to `/`
 - [ ] After logout, `session["user_id"]` is no longer present
 - [ ] The `/logout` route no longer returns the raw stub string
+- [ ] When logged out, the nav shows **Sign in** and **Get started**
+- [ ] When logged in, the nav shows **Log out** (and hides Sign in / Get started)
+- [ ] Visiting `GET /login` or `GET /register` while logged in redirects to `/`
+- [ ] When logged out, `GET /login` and `GET /register` still render their forms
