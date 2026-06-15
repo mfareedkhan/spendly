@@ -50,6 +50,16 @@ def create_user(name, email, password):
     return new_id
 
 
+def get_user_by_email(email):
+    con = get_db()
+    row = con.execute(
+        "SELECT id, name, email, password_hash, created_at FROM users WHERE email = ?",
+        (email,),
+    ).fetchone()
+    con.close()
+    return row
+
+
 def seed_db():
     con = get_db()
     row = con.execute(
