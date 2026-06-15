@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from werkzeug.security import generate_password_hash
 
 
@@ -33,6 +34,20 @@ def init_db():
     """)
     con.commit()
     con.close()
+
+
+def create_user(name, email, password):
+    password_hash = generate_password_hash(password)
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    con = get_db()
+    cur = con.execute(
+        "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
+        (name, email, password_hash, created_at),
+    )
+    con.commit()
+    new_id = cur.lastrowid
+    con.close()
+    return new_id
 
 
 def seed_db():
