@@ -50,7 +50,7 @@ No new dependencies. Uses `werkzeug.security` (already installed) and Flask's bu
 - Use CSS variables — never hardcode hex values
 - Use `url_for()` for every internal link — never hardcode URLs
 
-## Definition of done
+## Definition of done / Acceptance Criteria
 - [ ] `GET /register` renders the registration form without errors
 - [ ] Submitting the form with all valid fields creates a new user in `users` and redirects to `/login`
 - [ ] Submitting with mismatched passwords re-renders the form with an error message, no DB insert

@@ -14,13 +14,15 @@ app.secret_key = "spendly-dev-secret-key"
 
 @app.route("/")
 def landing():
+    if session.get("user_id"):
+        return redirect(url_for("profile"))
     return render_template("landing.html")
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if session.get("user_id"):
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
     if request.method == "GET":
         return render_template("register.html")
     elif request.method == "POST":
@@ -57,7 +59,7 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("user_id"):
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
     if request.method == "GET":
         return render_template("login.html")
     elif request.method == "POST":
@@ -72,7 +74,7 @@ def login():
             return render_template("login.html", error="Invalid email or password.")
 
         session["user_id"] = user["id"]
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
     else:
         abort(405)
 
@@ -99,7 +101,38 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    # Hardcoded data for Step 4 — replaced with real DB queries in Step 5.
+    user = {"name": "Aarav Sharma", "email": "aarav.sharma@example.com",
+            "member_since": "March 2025"}
+    transactions = [
+        {"date": "14 Jun 2026", "category": "Food",          "description": "Lunch at Saravana Bhavan", "amount": 420},
+        {"date": "12 Jun 2026", "category": "Transport",     "description": "Auto to office",            "amount": 180},
+        {"date": "10 Jun 2026", "category": "Shopping",      "description": "Cotton kurta",              "amount": 1299},
+        {"date": "08 Jun 2026", "category": "Bills",         "description": "Electricity bill",          "amount": 2150},
+        {"date": "05 Jun 2026", "category": "Entertainment", "description": "Movie tickets",             "amount": 600},
+        {"date": "02 Jun 2026", "category": "Food",          "description": "Groceries — BigBasket",     "amount": 1850},
+    ]
+
+    total_spent = sum(t["amount"] for t in transactions)
+    totals = {}
+    for t in transactions:
+        totals[t["category"]] = totals.get(t["category"], 0) + t["amount"]
+    breakdown = [
+        {"category": c, "total": a, "percent": round(a / total_spent * 100)}
+        for c, a in sorted(totals.items(), key=lambda kv: kv[1], reverse=True)
+    ]
+    top_category = breakdown[0]["category"]
+    initials = "".join(w[0] for w in user["name"].split()[:2]).upper()
+    stats = {"total_spent": total_spent, "transaction_count": len(transactions),
+             "top_category": top_category}
+
+    return render_template(
+        "profile.html", user=user, initials=initials, stats=stats,
+        transactions=transactions, breakdown=breakdown,
+    )
 
 
 @app.route("/expenses/add")
