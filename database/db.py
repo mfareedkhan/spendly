@@ -1,10 +1,11 @@
+import os
 import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
 
 def get_db():
-    con = sqlite3.connect("spendly.db")
+    con = sqlite3.connect(os.environ.get("SPENDLY_DB", "spendly.db"))
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     return con
@@ -71,7 +72,7 @@ def seed_db():
 
     con.execute(
         "INSERT INTO users (name, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-        ("Demo User", "demo@spendly.com", generate_password_hash("demo123"), "2026-01-01"),
+        ("Ahmed Khan", "demo@spendly.com", generate_password_hash("demo123"), "2026-01-01"),
     )
     con.commit()
 
@@ -80,14 +81,14 @@ def seed_db():
     ).fetchone()["id"]
 
     expenses = [
-        (user_id, 12.50,  "Food",          "2026-05-01", "Lunch at café"),
-        (user_id, 45.00,  "Bills",         "2026-05-03", "Electricity bill"),
-        (user_id, 8.75,   "Transport",     "2026-05-05", "Bus pass top-up"),
-        (user_id, 62.99,  "Shopping",      "2026-05-08", "New trainers"),
-        (user_id, 20.00,  "Entertainment", "2026-05-10", "Cinema tickets"),
-        (user_id, 35.40,  "Health",        "2026-05-14", "Pharmacy prescription"),
-        (user_id, 18.90,  "Food",          "2026-05-18", "Grocery run"),
-        (user_id, 9.99,   "Entertainment", "2026-05-22", "Streaming subscription"),
+        (user_id, 450.00,  "Food",          "2026-05-01", "Lunch at Student Biryani"),
+        (user_id, 3200.00, "Bills",         "2026-05-03", "K-Electric bill"),
+        (user_id, 600.00,  "Transport",     "2026-05-05", "Careem ride to office"),
+        (user_id, 4500.00, "Shopping",      "2026-05-08", "Lawn suit from Khaadi"),
+        (user_id, 1200.00, "Entertainment", "2026-05-10", "Cinema tickets at Nueplex"),
+        (user_id, 850.00,  "Health",        "2026-05-14", "Medicines from Servaid"),
+        (user_id, 2800.00, "Food",          "2026-05-18", "Groceries at Imtiaz"),
+        (user_id, 1100.00, "Entertainment", "2026-05-22", "Netflix subscription"),
     ]
     con.executemany(
         "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",

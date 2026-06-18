@@ -50,7 +50,7 @@ None.
   - Description: optional; strip whitespace; store as `NULL` if empty
 - On validation failure: re-render form with error message and pre-populated fields — do not redirect
 - On success: `flash` confirmation and `redirect` to `url_for("profile")`
-- Currency displays as ₹ — never £ or $
+- Currency displays as Rs — never £ or $
 - CSS variables only — never hardcoded hex values
 - All templates extend `base.html`
 - Use `url_for()` for every internal link

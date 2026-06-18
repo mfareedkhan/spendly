@@ -2,6 +2,12 @@ import sqlite3
 
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, session
 from database.db import init_db, seed_db, create_user, get_user_by_email
+from database.queries import (
+    get_user_by_id,
+    get_summary_stats,
+    get_recent_transactions,
+    get_category_breakdown,
+)
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
@@ -104,30 +110,17 @@ def profile():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    # Hardcoded data for Step 4 — replaced with real DB queries in Step 5.
-    user = {"name": "Aarav Sharma", "email": "aarav.sharma@example.com",
-            "member_since": "March 2025"}
-    transactions = [
-        {"date": "14 Jun 2026", "category": "Food",          "description": "Lunch at Saravana Bhavan", "amount": 420},
-        {"date": "12 Jun 2026", "category": "Transport",     "description": "Auto to office",            "amount": 180},
-        {"date": "10 Jun 2026", "category": "Shopping",      "description": "Cotton kurta",              "amount": 1299},
-        {"date": "08 Jun 2026", "category": "Bills",         "description": "Electricity bill",          "amount": 2150},
-        {"date": "05 Jun 2026", "category": "Entertainment", "description": "Movie tickets",             "amount": 600},
-        {"date": "02 Jun 2026", "category": "Food",          "description": "Groceries — BigBasket",     "amount": 1850},
-    ]
+    user_id = session["user_id"]
+    user = get_user_by_id(user_id)
+    if user is None:
+        # Stale session pointing at a deleted user — clear it and re-auth.
+        session.clear()
+        return redirect(url_for("login"))
 
-    total_spent = sum(t["amount"] for t in transactions)
-    totals = {}
-    for t in transactions:
-        totals[t["category"]] = totals.get(t["category"], 0) + t["amount"]
-    breakdown = [
-        {"category": c, "total": a, "percent": round(a / total_spent * 100)}
-        for c, a in sorted(totals.items(), key=lambda kv: kv[1], reverse=True)
-    ]
-    top_category = breakdown[0]["category"]
+    stats = get_summary_stats(user_id)
+    transactions = get_recent_transactions(user_id)
+    breakdown = get_category_breakdown(user_id)
     initials = "".join(w[0] for w in user["name"].split()[:2]).upper()
-    stats = {"total_spent": total_spent, "transaction_count": len(transactions),
-             "top_category": top_category}
 
     return render_template(
         "profile.html", user=user, initials=initials, stats=stats,
