@@ -22,7 +22,7 @@
     <section class="stats-row">
         <div class="stat-card">
             <span class="stat-label">Total spent</span>
-            <span class="stat-value">₹{{ "{:,}".format(stats.total_spent) }}</span>
+            <span class="stat-value">Rs {{ "{:,.2f}".format(stats.total_spent) }}</span>
         </div>
         <div class="stat-card">
             <span class="stat-label">Transactions</span>
@@ -51,7 +51,7 @@
                     <td>{{ t.date }}</td>
                     <td><span class="badge badge-{{ t.category|lower }}">{{ t.category }}</span></td>
                     <td>{{ t.description }}</td>
-                    <td class="txn-amount">₹{{ "{:,}".format(t.amount) }}</td>
+                    <td class="txn-amount">Rs {{ "{:,.2f}".format(t.amount) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -68,7 +68,7 @@
                     <div class="bar" style="--pct: {{ b.percent }}%"></div>
                 </div>
                 <span class="breakdown-pct">{{ b.percent }}%</span>
-                <span class="breakdown-total">₹{{ "{:,}".format(b.total) }}</span>
+                <span class="breakdown-total">Rs {{ "{:,.2f}".format(b.total) }}</span>
             </div>
             {% endfor %}
         </div>

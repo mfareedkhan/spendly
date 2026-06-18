@@ -44,7 +44,7 @@ None.
 - On success: redirect to `url_for("profile")`
 - The `confirm()` dialog is the only JS required — no other JS changes
 - `.btn-delete` styling must use CSS variables — never hardcoded hex values
-- Currency as ₹ — never £ or $
+- Currency as Rs — never £ or $
 
 ## Definition of done
 - [ ] Delete button appears in the Actions column for each transaction on the profile page

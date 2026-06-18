@@ -1,50 +1,104 @@
-# Spec: Backend Connection for Profile Page
+# Spec: Backend Connection
 
 ## Overview
-Replace the hardcoded demo data in the `/profile` route with live SQLite queries. After this step the profile page shows each logged-in user's actual expenses, real summary statistics, and a live category breakdown.
+Step 5 replaces all hardcoded data in the `/profile` route with live queries
+against the SQLite database. The profile page currently renders a static demo
+user, fixed summary stats, a hand-typed transaction list, and a hardcoded
+category breakdown. This step wires those four sections to real data so that
+every logged-in user sees their own expenses. Three parallel subagents handle
+the three independent data concerns — transaction history, summary stats, and
+category breakdown — before being integrated into the single `/profile` route.
 
 ## Depends on
-- Step 01 — Database setup (`get_db()`, `users` and `expenses` tables)
-- Step 03 — Login (`session["user_id"]` populated on login)
-- Step 04 — Profile page UI (template already built and styled)
+- Step 1: Database setup (tables and `get_db()` exist)
+- Step 2: Registration (users are stored in the database)
+- Step 3: Login / Logout (`session["user_id"]` is set on login)
+- Step 4: Profile page static UI (template already renders all four sections)
 
 ## Routes
-- `GET /profile` — no route signature change; only the data source changes
+No new routes. The existing `GET /profile` route is modified.
 
 ## Database changes
-Create a new file `database/queries.py` with four query functions:
-
-- **`get_user_by_id(user_id)`** — returns user row with `name`, `email`, and membership date formatted as `"Month YYYY"`
-- **`get_summary_stats(user_id)`** — returns `total_spent` (float), `transaction_count` (int), `top_category` (str); returns zeros and empty string for users with no expenses
-- **`get_recent_transactions(user_id, limit=10)`** — returns up to 10 most recent expenses ordered newest-first
-- **`get_category_breakdown(user_id)`** — returns list of `{category, total, percentage}` dicts; percentages are integers summing to exactly 100 (apply rounding adjustment to the largest category)
+No database changes. The `users` and `expenses` tables already have all
+required columns (`user_id`, `amount`, `category`, `date`, `description`,
+`created_at`).
 
 ## Templates
-- **Modify**: `templates/profile.html` — replace hardcoded values with Jinja2 template variables
+- **Modify**: `templates/profile.html`
+  - Amounts must be rendered with the Rs symbol (Pakistani Rupee).
+  - All four dynamic sections (user info, summary stats, transaction list,
+    category breakdown) are already present — no structural changes needed,
+    only the Jinja variables they consume are now real.
 
 ## Files to change
-- `app.py` — update `profile()` to call the four query functions and pass real data to the template
-- `templates/profile.html` — replace hardcoded demo data with template variables
+- `app.py` — replace hardcoded data in the `profile()` view with DB queries
+- `templates/profile.html` — confirm Rs symbol is used for all currency display
 
 ## Files to create
-- `database/queries.py` — implement the four query functions listed above
+- `database/queries.py` — pure query helpers (no Flask imports), one function
+  per data concern:
+  - `get_user_by_id(user_id)` → dict with `name`, `email`, `member_since`
+  - `get_summary_stats(user_id)` → dict with `total_spent`, `transaction_count`, `top_category`
+  - `get_recent_transactions(user_id, limit=10)` → list of dicts, each with `date`, `description`, `category`, `amount`
+  - `get_category_breakdown(user_id)` → list of dicts, each with `category`, `total`, `percent` (percentage of total, integer; keys match what `profile.html` consumes)
 
 ## New dependencies
-None.
+No new dependencies.
 
 ## Rules for implementation
-- Raw `sqlite3` only — no ORMs, no SQLAlchemy
-- Parameterized queries only — never f-strings or string concatenation in SQL
-- Currency must always display as ₹ — never £ or $
-- Empty state: functions must return zeros and empty collections for users with no expenses — never raise exceptions
-- Category percentages must be integers and must sum to exactly 100; apply rounding correction to the largest category
-- Membership date format: `"Month YYYY"` derived from `created_at`
+- No SQLAlchemy or ORMs — raw `sqlite3` only via `get_db()`
+- Parameterised queries only — never string-format values into SQL
+- Foreign keys PRAGMA must be enabled on every connection (already done in `get_db()`)
+- Use CSS variables — never hardcode hex values
+- All templates extend `base.html`
+- No inline styles
+- Currency must always display as Rs — never £ or $
+- `member_since` must be derived from `users.created_at` and formatted as
+  "Month YYYY" (e.g. "January 2026")
+- `percent` values in category breakdown must sum to 100; use integer rounding and
+  adjust the largest category to absorb any rounding remainder
+- If a user has no expenses, summary stats should return zeros and empty lists
+  rather than raising exceptions
+- Query helpers in `database/queries.py` must call `get_db()` internally and
+  close the connection before returning
+
+## Tests to write
+
+### Unit tests
+File: `tests/test_backend_connection.py`
+
+| Function | Input | Expected output |
+|---|---|---|
+| `get_user_by_id` | valid `user_id` | dict with correct `name`, `email`, `member_since` |
+| `get_user_by_id` | non-existent id | `None` |
+| `get_summary_stats` | `user_id` with expenses | correct `total_spent`, `transaction_count`, `top_category` |
+| `get_summary_stats` | `user_id` with no expenses | `{"total_spent": 0, "transaction_count": 0, "top_category": "—"}` |
+| `get_recent_transactions` | `user_id` with expenses | list ordered newest-first, each item has `date`, `description`, `category`, `amount` |
+| `get_recent_transactions` | `user_id` with no expenses | empty list |
+| `get_category_breakdown` | `user_id` with expenses | list ordered by `total` desc; `percent` values are integers summing to 100 |
+| `get_category_breakdown` | `user_id` with no expenses | empty list |
+
+### Route tests
+`GET /profile` — unauthenticated:
+- Redirects to `/login` (302)
+
+`GET /profile` — authenticated as seed user:
+- Returns 200
+- Response contains the seed user's name ("Ahmed Khan")
+- Response contains the seed user's email ("demo@spendly.com")
+- Response contains Rs symbol
+- `total_spent` matches sum of all seed expenses (14700.00)
+- `transaction_count` is 8
+- `top_category` is "Shopping" (highest single-category total)
+- Transaction list appears in newest-first order
+- Category breakdown contains all 6 categories
 
 ## Definition of done
-- [ ] Logging in as the seed user (`demo@spendly.com`) shows ₹346.24 total spending
-- [ ] Transaction count shows 8
-- [ ] Top category shows "Bills"
-- [ ] All 7 categories appear in the breakdown
-- [ ] Category percentages sum to exactly 100
-- [ ] A user with no expenses sees zeros and empty tables — no errors
-- [ ] No hardcoded data remains in `app.py`'s `profile()` function
+- [ ] Logging in as the seed user (demo@spendly.com / demo123) shows "Ahmed Khan" and "demo@spendly.com" on the profile page — not the hardcoded strings
+- [ ] Total spent displayed on the profile page equals Rs 14,700.00
+- [ ] Transaction count displayed is 8
+- [ ] Top category displayed is "Shopping"
+- [ ] Transaction list shows 8 rows ordered newest date first
+- [ ] Category breakdown shows 6 categories with percentages that add up to 100 %
+- [ ] All amounts on the page display the Rs symbol
+- [ ] Registering a brand-new user and visiting `/profile` shows Rs 0.00 total spent, 0 transactions, and an empty category breakdown — no errors

@@ -51,7 +51,7 @@ None.
 - On validation failure: re-render form with error and pre-populated fields — do not redirect
 - On success: flash confirmation and redirect to `url_for("profile")`
 - Ownership check must happen at the database level (WHERE clause includes `user_id`) — not only in Python
-- Currency as ₹ — never £ or $
+- Currency as Rs — never £ or $
 - CSS variables only — never hardcoded hex values
 
 ## Definition of done

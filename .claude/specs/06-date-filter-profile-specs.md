@@ -44,7 +44,7 @@ None. `datetime` is stdlib.
 - All three data sections (stats, transactions, breakdown) must respect the active filter
 - Active preset button must be visually highlighted using a CSS class — no inline styles
 - CSS variables only — never hardcoded hex values
-- Currency as ₹ throughout
+- Currency as Rs throughout
 
 ## Definition of done
 - [ ] Visiting `/profile` with no query params shows all expenses (unchanged behaviour)
