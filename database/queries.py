@@ -33,27 +33,28 @@ def get_user_by_id(user_id):
 
 
 # --- Subagent 1: get_recent_transactions ---
-def get_recent_transactions(user_id, limit=10):
-    """STUB — implemented by Subagent 1.
-
-    Return a list of the user's most recent expenses, newest first, capped
-    at `limit`. Each item is a dict with keys: "date", "category",
-    "description", "amount". The "date" must be formatted for display as
-    "DD Mon YYYY" (e.g. "18 May 2026") parsed from the stored "YYYY-MM-DD".
-    A user with no expenses returns []. Parameterised queries only; close
-    the connection before returning.
-    """
-    con = get_db()
-    rows = con.execute(
+def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
+    if date_from and date_to:
+        sql = """
+        SELECT date, category, description, amount
+        FROM expenses
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+        ORDER BY date DESC, id DESC
+        LIMIT ?
         """
+        params = (user_id, date_from, date_to, limit)
+    else:
+        sql = """
         SELECT date, category, description, amount
         FROM expenses
         WHERE user_id = ?
         ORDER BY date DESC, id DESC
         LIMIT ?
-        """,
-        (user_id, limit),
-    ).fetchall()
+        """
+        params = (user_id, limit)
+
+    con = get_db()
+    rows = con.execute(sql, params).fetchall()
     con.close()
 
     return [
@@ -68,33 +69,27 @@ def get_recent_transactions(user_id, limit=10):
 
 
 # --- Subagent 2: get_summary_stats ---
-def get_summary_stats(user_id):
-    """STUB — implemented by Subagent 2.
-
-    Return {"total_spent": float, "transaction_count": int,
-    "top_category": str} for the user. total_spent is the sum of all their
-    expense amounts; transaction_count is the number of expenses;
-    top_category is the single category with the highest summed amount.
-    A user with no expenses returns
-    {"total_spent": 0, "transaction_count": 0, "top_category": "—"}.
-    Parameterised queries only; close the connection before returning.
-    """
-    con = get_db()
-    totals = con.execute(
-        "SELECT COUNT(*) AS count, SUM(amount) AS total FROM expenses WHERE user_id = ?",
-        (user_id,),
-    ).fetchone()
-    top = con.execute(
+def get_summary_stats(user_id, date_from=None, date_to=None):
+    if date_from and date_to:
+        sql_totals = "SELECT COUNT(*) AS count, SUM(amount) AS total FROM expenses WHERE user_id = ? AND date BETWEEN ? AND ?"
+        sql_top    = """
+        SELECT category FROM expenses
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+        GROUP BY category ORDER BY SUM(amount) DESC, category ASC LIMIT 1
         """
-        SELECT category
-        FROM expenses
+        params = (user_id, date_from, date_to)
+    else:
+        sql_totals = "SELECT COUNT(*) AS count, SUM(amount) AS total FROM expenses WHERE user_id = ?"
+        sql_top    = """
+        SELECT category FROM expenses
         WHERE user_id = ?
-        GROUP BY category
-        ORDER BY SUM(amount) DESC, category ASC
-        LIMIT 1
-        """,
-        (user_id,),
-    ).fetchone()
+        GROUP BY category ORDER BY SUM(amount) DESC, category ASC LIMIT 1
+        """
+        params = (user_id,)
+
+    con = get_db()
+    totals = con.execute(sql_totals, params).fetchone()
+    top    = con.execute(sql_top,    params).fetchone()
     con.close()
 
     transaction_count = totals["count"]
@@ -109,27 +104,24 @@ def get_summary_stats(user_id):
 
 
 # --- Subagent 3: get_category_breakdown ---
-def get_category_breakdown(user_id):
-    """STUB — implemented by Subagent 3.
-
-    Return a list of dicts with keys "category", "total", "percent",
-    ordered by "total" descending. "percent" values are integers that sum
-    to exactly 100 — round each category's share, then add the leftover
-    remainder to the largest category so the total is exactly 100. A user
-    with no expenses returns []. Parameterised queries only; close the
-    connection before returning.
-    """
-    con = get_db()
-    rows = con.execute(
+def get_category_breakdown(user_id, date_from=None, date_to=None):
+    if date_from and date_to:
+        sql    = """
+        SELECT category, SUM(amount) AS total FROM expenses
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+        GROUP BY category ORDER BY total DESC
         """
-        SELECT category, SUM(amount) AS total
-        FROM expenses
+        params = (user_id, date_from, date_to)
+    else:
+        sql    = """
+        SELECT category, SUM(amount) AS total FROM expenses
         WHERE user_id = ?
-        GROUP BY category
-        ORDER BY total DESC
-        """,
-        (user_id,),
-    ).fetchall()
+        GROUP BY category ORDER BY total DESC
+        """
+        params = (user_id,)
+
+    con = get_db()
+    rows = con.execute(sql, params).fetchall()
     con.close()
 
     if not rows:
@@ -152,3 +144,13 @@ def get_category_breakdown(user_id):
     breakdown[0]["percent"] += remainder
 
     return breakdown
+
+
+def insert_expense(user_id, amount, category, expense_date, description):
+    con = get_db()
+    con.execute(
+        "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+        (user_id, amount, category, expense_date, description),
+    )
+    con.commit()
+    con.close()
