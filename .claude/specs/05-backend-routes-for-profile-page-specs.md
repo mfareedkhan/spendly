@@ -25,14 +25,14 @@ required columns (`user_id`, `amount`, `category`, `date`, `description`,
 
 ## Templates
 - **Modify**: `templates/profile.html`
-  - Amounts must be rendered with the Rs symbol (Pakistani Rupee).
+  - Amounts must be rendered with the Rs. symbol (Pakistani Rupee).
   - All four dynamic sections (user info, summary stats, transaction list,
     category breakdown) are already present — no structural changes needed,
     only the Jinja variables they consume are now real.
 
 ## Files to change
 - `app.py` — replace hardcoded data in the `profile()` view with DB queries
-- `templates/profile.html` — confirm Rs symbol is used for all currency display
+- `templates/profile.html` — confirm Rs. symbol is used for all currency display
 
 ## Files to create
 - `database/queries.py` — pure query helpers (no Flask imports), one function
@@ -40,7 +40,7 @@ required columns (`user_id`, `amount`, `category`, `date`, `description`,
   - `get_user_by_id(user_id)` → dict with `name`, `email`, `member_since`
   - `get_summary_stats(user_id)` → dict with `total_spent`, `transaction_count`, `top_category`
   - `get_recent_transactions(user_id, limit=10)` → list of dicts, each with `date`, `description`, `category`, `amount`
-  - `get_category_breakdown(user_id)` → list of dicts, each with `category`, `total`, `percent` (percentage of total, integer; keys match what `profile.html` consumes)
+  - `get_category_breakdown(user_id)` → list of dicts, each with `name`, `amount`, `pct` (percentage of total, rounded to nearest int)
 
 ## New dependencies
 No new dependencies.
@@ -52,10 +52,10 @@ No new dependencies.
 - Use CSS variables — never hardcode hex values
 - All templates extend `base.html`
 - No inline styles
-- Currency must always display as Rs — never £ or $
+- Currency must always display as ₹ — never £ or $
 - `member_since` must be derived from `users.created_at` and formatted as
   "Month YYYY" (e.g. "January 2026")
-- `percent` values in category breakdown must sum to 100; use integer rounding and
+- `pct` values in category breakdown must sum to 100; use integer rounding and
   adjust the largest category to absorb any rounding remainder
 - If a user has no expenses, summary stats should return zeros and empty lists
   rather than raising exceptions
@@ -75,7 +75,7 @@ File: `tests/test_backend_connection.py`
 | `get_summary_stats` | `user_id` with no expenses | `{"total_spent": 0, "transaction_count": 0, "top_category": "—"}` |
 | `get_recent_transactions` | `user_id` with expenses | list ordered newest-first, each item has `date`, `description`, `category`, `amount` |
 | `get_recent_transactions` | `user_id` with no expenses | empty list |
-| `get_category_breakdown` | `user_id` with expenses | list ordered by `total` desc; `percent` values are integers summing to 100 |
+| `get_category_breakdown` | `user_id` with expenses | list ordered by `amount` desc; `pct` values are integers summing to 100 |
 | `get_category_breakdown` | `user_id` with no expenses | empty list |
 
 ### Route tests
@@ -84,21 +84,21 @@ File: `tests/test_backend_connection.py`
 
 `GET /profile` — authenticated as seed user:
 - Returns 200
-- Response contains the seed user's name ("Ahmed Khan")
+- Response contains the seed user's name ("Demo User")
 - Response contains the seed user's email ("demo@spendly.com")
-- Response contains Rs symbol
-- `total_spent` matches sum of all seed expenses (14700.00)
+- Response contains ₹ symbol
+- `total_spent` matches sum of all seed expenses (346.24)
 - `transaction_count` is 8
-- `top_category` is "Shopping" (highest single-category total)
+- `top_category` is "Bills" (highest single-category total)
 - Transaction list appears in newest-first order
-- Category breakdown contains all 6 categories
+- Category breakdown contains all 7 categories
 
 ## Definition of done
-- [ ] Logging in as the seed user (demo@spendly.com / demo123) shows "Ahmed Khan" and "demo@spendly.com" on the profile page — not the hardcoded strings
-- [ ] Total spent displayed on the profile page equals Rs 14,700.00
+- [ ] Logging in as the seed user (demo@spendly.com / demo123) shows "Demo User" and "demo@spendly.com" on the profile page — not the hardcoded strings
+- [ ] Total spent displayed on the profile page equals ₹346.24
 - [ ] Transaction count displayed is 8
-- [ ] Top category displayed is "Shopping"
+- [ ] Top category displayed is "Bills"
 - [ ] Transaction list shows 8 rows ordered newest date first
-- [ ] Category breakdown shows 6 categories with percentages that add up to 100 %
-- [ ] All amounts on the page display the Rs symbol
-- [ ] Registering a brand-new user and visiting `/profile` shows Rs 0.00 total spent, 0 transactions, and an empty category breakdown — no errors
+- [ ] Category breakdown shows 7 categories with percentages that add up to 100 %
+- [ ] All amounts on the page display the ₹ symbol
+- [ ] Registering a brand-new user and visiting `/profile` shows ₹0.00 total spent, 0 transactions, and an empty category breakdown — no errors

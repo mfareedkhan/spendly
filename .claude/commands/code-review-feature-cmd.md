@@ -1,77 +1,87 @@
 ---
-description: Run parallel security and quality review on a completed feature
+description: Runs parallel security and quality code review for a specific Spendly feature. Pass the spec name as argument e.g. /code-review-feature 03-login
 argument-hint: "<spec-name>"
-allowed-tools: Read, Bash(git:*), Agent
+allowed-tools: Bash(git diff), Bash(git diff --staged)
 ---
 
-A spec name is required. Usage: `/code-review-feature <spec-name>`
-Example: `/code-review-feature 03-login`
+Run the full code review pipeline for the feature specified in $ARGUMENTS.
 
-If $ARGUMENTS is empty, stop here.
+If no argument is provided, stop immediately and say:
+"Please provide a spec name. Usage: /code-review-feature <spec-name> e.g. /code-review-feature 03-login"
 
-## Step 1 — Collect changes
+## Pre-flight Check
 
-Run both of these and combine the output into a single diff:
-```bash
-git diff
-git diff --staged
-```
+Before invoking any subagents, collect the diff:
+- Run `git diff` for unstaged changes
+- Run `git diff --staged` for staged changes
+- Combine both into a single diff
 
-If both return empty output, stop and say:
-"No changes detected. Stage or make changes before running a review."
+If both are empty, stop immediately and say:
+"No changes detected. Implement the feature before running code review."
 
-## Step 2 — Verify spec exists
+---
 
-Check that `.claude/specs/$ARGUMENTS.md` exists.
-If not, stop and say:
-"Spec file not found: .claude/specs/$ARGUMENTS.md"
+## Step 1: Parallel Review
 
-## Step 3 — Launch parallel reviews
+Invoke both subagents simultaneously with the same context:
 
-Spawn BOTH subagents simultaneously — not sequentially:
+**spendly-security-reviewer** receives:
+- The combined diff from the pre-flight check
+- Spec file for context: `.claude/specs/$ARGUMENTS.md`
+- Source files to reference: `app.py` and `database/` directory
+- Instruction: Review only the changed code for security vulnerabilities. Do not comment on quality or style.
 
-**spendly-security-reviewer**: Review the diff against `.claude/specs/$ARGUMENTS.md` and the relevant source files. Focus exclusively on security vulnerabilities.
+**spendly-quality-reviewer** receives:
+- The combined diff from the pre-flight check
+- Spec file for context: `.claude/specs/$ARGUMENTS.md`
+- Source files to reference: `app.py`, `database/` directory, and `templates/` directory
+- Instruction: Review only the changed code for quality, Flask best practices, and maintainability. Do not comment on security concerns.
 
-**spendly-quality-reviewer**: Review the same diff for Flask best practices, code organization, naming, and maintainability. Do not comment on security.
+Both subagents must run in parallel. Do not wait for one to finish before starting the other.
 
-Both agents receive:
-- The combined diff from Step 1
-- The spec file at `.claude/specs/$ARGUMENTS.md`
-- Access to `app.py`, `database/db.py`, and relevant templates
+---
 
-## Step 4 — Unified report
+## Step 2: Unified Report
 
-After both reviews complete, consolidate findings into one report:
+Once both subagents have completed, combine their findings into a single unified report. De-duplicate any overlapping findings — if both agents flagged the same line for different reasons, merge them into one 
+finding with both perspectives noted.
 
-```
-Code Review — [Feature Name]
+Structure the combined report as:
+Code Review Report — $ARGUMENTS 
+Security Findings
+[spendly-security-reviewer output]
 
-🚨 Critical / High (Security)
-[Critical security findings first]
+Quality Findings
+[spendly-quality-reviewer output]
+Combined Action Plan
+Ordered checklist of everything that needs to be fixed, prioritized by severity:
 
-🔧 Change Requests (Quality)
-[Quality issues that should be fixed]
+[Critical/High security findings first]
+[Quality CHANGES REQUESTED items second]
+[Medium/Low security findings third]
+[Quality APPROVED WITH SUGGESTIONS items last]
 
-⚠️ Medium / Low (Security)
-[Lower-priority security notes]
+Overall Verdict
+APPROVED — ready to commit
+APPROVED WITH SUGGESTIONS — can commit, address suggestions in future steps
+CHANGES REQUESTED — must fix before committing, see action plan above
+---
 
-💡 Suggestions
-[Optional improvements from both reviewers]
+## Step 3: Ask for Approval
 
-✅ Approved patterns
-[What both reviewers found clean and correct]
-```
+After presenting the unified report, ask:
 
-Merge duplicate findings when both agents flagged the same code for different reasons.
+"Do you want me to implement the action plan now?"
 
-## Step 5 — User approval gate
+Wait for explicit user confirmation before making any changes. Do not touch any files until the user approves.
 
-Present the full report and ask:
-"Do you want me to implement these fixes? (yes/no)"
-
-**Do NOT edit any files before receiving explicit approval.**
+---
 
 ## Rules
-- Both reviewers must launch simultaneously — never sequentially
-- Partial results from a failed subagent cannot be presented as a complete review
-- No file modifications until the user explicitly approves
+- Do NOT edit any files before user approval
+- Do NOT start one reviewer before the other — both must run in parallel
+- Do NOT skip the pre-flight diff check
+- Do NOT proceed if the spec file at 
+  `.claude/specs/$ARGUMENTS.md` does not exist — report it and stop
+- If either subagent fails or returns no output, report it and do not present a partial review 
+  as complete
