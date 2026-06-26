@@ -80,7 +80,7 @@ pytest -s
 | `GET, POST /login`          | Implemented — GET renders `login.html`, POST authenticates |
 | `GET /logout`               | Implemented — clears session, redirects to `/` |
 | `GET /profile`              | Implemented — renders `profile.html` with live DB queries via `database/queries.py` |
-| `GET /expenses/add`         | Stub — Step 7                         |
+| `GET, POST /expenses/add`   | Implemented — renders `add_expense.html`, inserts into DB |
 | `GET /expenses/<id>/edit`   | Stub — Step 8                         |
 | `GET /expenses/<id>/delete` | Stub — Step 9                         |
 

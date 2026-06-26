@@ -15,6 +15,7 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "spendly-dev-secret-key")
+app.config["TEMPLATES_AUTO_RELOAD"] = os.environ.get("FLASK_ENV") == "development"
 
 CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
@@ -197,7 +198,7 @@ def add_expense():
         )
 
     amount_raw  = request.form.get("amount", "").strip()
-    category    = request.form.get("category", "").strip()
+    category    = request.form.get("category", "")
     date_raw    = request.form.get("date", "").strip()
     description = request.form.get("description", "").strip() or None
 
@@ -238,6 +239,20 @@ def add_expense():
     insert_expense(session["user_id"], amount, category, date_raw, description)
     flash("Expense added.", "success")
     return redirect(url_for("profile"))
+
+
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    user = get_user_by_id(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    return render_template("analytics.html", user=user)
 
 
 @app.route("/expenses/<int:id>/edit")
