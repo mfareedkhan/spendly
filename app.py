@@ -15,6 +15,7 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "spendly-dev-secret-key")
+app.config["TEMPLATES_AUTO_RELOAD"] = os.environ.get("FLASK_ENV") == "development"
 
 CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
 
@@ -197,7 +198,7 @@ def add_expense():
         )
 
     amount_raw  = request.form.get("amount", "").strip()
-    category    = request.form.get("category", "").strip()
+    category    = request.form.get("category", "")
     date_raw    = request.form.get("date", "").strip()
     description = request.form.get("description", "").strip() or None
 
