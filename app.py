@@ -240,6 +240,20 @@ def add_expense():
     return redirect(url_for("profile"))
 
 
+@app.route("/analytics")
+def analytics():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    user = get_user_by_id(user_id)
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    return render_template("analytics.html", user=user)
+
+
 @app.route("/expenses/<int:id>/edit")
 def edit_expense(id):
     return "Edit expense — coming in Step 8"
