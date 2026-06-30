@@ -47,8 +47,7 @@ git push -u origin CURRENT_BRANCH
 Report: "✓ Pushed — CURRENT_BRANCH"
 
 ## Step 5 — Create PR via GitHub MCP
-Use the GitHub MCP server to create a pull request
-from CURRENT_BRANCH into main.
+Use the GitHub MCP server to create a pull request from CURRENT_BRANCH into main.
 
 Title: plain English feature name, no conventional commit prefix
 Example: "Add delete expense functionality"
@@ -74,14 +73,12 @@ mark every item as checked [x]>
 Report: "✓ PR created — <PR URL>"
 
 ## Step 6 — Merge PR via GitHub MCP
-Use the GitHub MCP server to merge the pull request
-just created. Use squash merge.
+Use the GitHub MCP server to merge the pull request just created. Use squash merge.
 
 Report: "✓ PR merged to main"
 
 ## Step 7 — Delete remote branch via GitHub MCP
-Use the GitHub MCP server to delete CURRENT_BRANCH
-from GitHub after the merge.
+Use the GitHub MCP server to delete CURRENT_BRANCH from GitHub after the merge.
 
 Report: "✓ Remote branch deleted"
 

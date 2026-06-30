@@ -10,6 +10,8 @@ from database.queries import (
     get_recent_transactions,
     get_category_breakdown,
     insert_expense,
+    get_expense_by_id,
+    update_expense,
 )
 from werkzeug.security import check_password_hash
 
@@ -255,9 +257,69 @@ def analytics():
     return render_template("analytics.html", user=user)
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    expense = get_expense_by_id(id, user_id)
+    if expense is None:
+        abort(404)
+
+    if request.method == "GET":
+        return render_template(
+            "edit_expense.html",
+            expense=expense,
+            categories=CATEGORIES,
+            amount=expense["amount"],
+            category=expense["category"],
+            date=expense["date"],
+            description=expense["description"] or "",
+        )
+
+    amount_raw  = request.form.get("amount", "").strip()
+    category    = request.form.get("category", "")
+    date_raw    = request.form.get("date", "").strip()
+    description = request.form.get("description", "").strip() or None
+
+    error  = None
+    amount = None
+
+    if not amount_raw:
+        error = "Amount is required."
+    else:
+        try:
+            amount = float(amount_raw)
+            if amount <= 0:
+                error = "Amount must be greater than zero."
+        except ValueError:
+            error = "Amount must be a valid number."
+
+    if not error and category not in CATEGORIES:
+        error = "Please select a valid category."
+
+    if not error:
+        try:
+            datetime.strptime(date_raw, "%Y-%m-%d")
+        except ValueError:
+            error = "Please enter a valid date."
+
+    if error:
+        return render_template(
+            "edit_expense.html",
+            expense=expense,
+            categories=CATEGORIES,
+            error=error,
+            amount=amount_raw,
+            category=category,
+            date=date_raw,
+            description=description or "",
+        )
+
+    update_expense(id, user_id, amount, category, date_raw, description)
+    flash("Expense updated.", "success")
+    return redirect(url_for("profile"))
 
 
 @app.route("/expenses/<int:id>/delete")

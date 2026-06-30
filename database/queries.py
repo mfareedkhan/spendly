@@ -36,7 +36,7 @@ def get_user_by_id(user_id):
 def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
     if date_from and date_to:
         sql = """
-        SELECT date, category, description, amount
+        SELECT id, date, category, description, amount
         FROM expenses
         WHERE user_id = ? AND date BETWEEN ? AND ?
         ORDER BY date DESC, id DESC
@@ -45,7 +45,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
         params = (user_id, date_from, date_to, limit)
     else:
         sql = """
-        SELECT date, category, description, amount
+        SELECT id, date, category, description, amount
         FROM expenses
         WHERE user_id = ?
         ORDER BY date DESC, id DESC
@@ -59,6 +59,7 @@ def get_recent_transactions(user_id, limit=10, date_from=None, date_to=None):
 
     return [
         {
+            "id": row["id"],
             "date": datetime.strptime(row["date"], "%Y-%m-%d").strftime("%d %b %Y"),
             "category": row["category"],
             "description": row["description"],
@@ -151,6 +152,28 @@ def insert_expense(user_id, amount, category, expense_date, description):
     con.execute(
         "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
         (user_id, amount, category, expense_date, description),
+    )
+    con.commit()
+    con.close()
+
+
+def get_expense_by_id(expense_id, user_id):
+    con = get_db()
+    row = con.execute(
+        "SELECT id, user_id, amount, category, date, description "
+        "FROM expenses WHERE id = ? AND user_id = ?",
+        (expense_id, user_id),
+    ).fetchone()
+    con.close()
+    return row
+
+
+def update_expense(expense_id, user_id, amount, category, date, description):
+    con = get_db()
+    con.execute(
+        "UPDATE expenses SET amount = ?, category = ?, date = ?, description = ? "
+        "WHERE id = ? AND user_id = ?",
+        (amount, category, date, description, expense_id, user_id),
     )
     con.commit()
     con.close()
